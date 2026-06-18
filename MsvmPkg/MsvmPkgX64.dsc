@@ -48,7 +48,6 @@
 
   *_GCC_*_ASLDLINK_FLAGS = -z common-page-size=0x1000
   *_GCC_*_DLINK_FLAGS    = -z common-page-size=0x1000
-  *_CLANGPDB_X64_DLINK_FLAGS = -align:4096
 
 # Set file alignment and (memory) alignment to 4K.
 # Memory alignment 4K is required for page protection.
@@ -58,13 +57,10 @@
 # File==memory for execute in place, or loader perf/simplicity otherwise.
 # The linker defaults to -align:4096, but this could be preceded by a lower -align specified
 # elsewhere in EFI build system.
-[BuildOptions.common.EDKII.DXE_CORE]
+[BuildOptions.common.EDKII.DXE_CORE, BuildOptions.common.EDKII.DXE_DRIVER, BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER, BuildOptions.common.EDKII.UEFI_APPLICATION, BuildOptions.common.EDKII.UEFI_DRIVER]
   MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
-  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:4096
+  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:0x200
 
-[BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
-  MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
-  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:4096
 
 ################################################################################
 #
@@ -381,7 +377,7 @@
 !if $(DEBUGLIB_SERIAL) == 1
   !ifdef DEBUG_NOISY
     # This enables verbose output
-    gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel|0x804FEF4B
+    gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel|0x804FEFCB
   !else
     # This default turns on errors and warnings
     gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel|0x80000002
@@ -447,7 +443,7 @@
   # NOTE: Additional debug levels may cause the in-memory advanced logger
   # buffer to exceed its defined limit (see PcdAdvancedLoggerPages)
   #
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x804FEF4B
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x804FEFCB
 
 # Disable asserts when not building debug
 # NOTE: Technically this is a lie, since BdDebugLib doesn't use this. But keep
@@ -806,7 +802,10 @@
   MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
   MdeModulePkg/Core/Pei/PeiMain.inf
   MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
-  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+  MdeModulePkg/Universal/PCD/Pei/Pcd.inf {
+    <LibraryClasses>
+      PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
+  }
   MsvmPkg/PlatformPei/PlatformPei.inf
   MsGraphicsPkg/MsUiTheme/Pei/MsUiThemePpi.inf
   MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTablePei/FirmwarePerformancePei.inf {
@@ -833,7 +832,10 @@
       SerialPortLib|PcAtChipsetPkg/Library/SerialIoLib/SerialIoLib.inf
       TransportLogControlLib|DebuggerFeaturePkg/Library/TransportLogControlLibNull/TransportLogControlLibNull.inf
   }
-  MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
+  MdeModulePkg/Universal/PCD/Dxe/Pcd.inf {
+    <LibraryClasses>
+      PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
+  }
   MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf {
     <LibraryClasses>
       SecurityManagementLib|MdeModulePkg/Library/DxeSecurityManagementLib/DxeSecurityManagementLib.inf
@@ -841,6 +843,7 @@
       NULL|SecurityPkg/Library/DxeTpm2MeasureBootLib/DxeTpm2MeasureBootLib.inf
   }
   MsvmPkg/CpuDxe/CpuDxe.inf
+  PatinaPkg/MpDxe/MpDxe.inf
   MdeModulePkg/Universal/Metronome/Metronome.inf
   MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf

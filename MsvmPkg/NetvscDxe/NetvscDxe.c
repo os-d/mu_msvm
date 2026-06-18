@@ -121,7 +121,10 @@ Return Value:
                         &gInternalEventServicesProtocolGuid,
                         NULL,
                         (VOID **)&mInternalEventServices);
-        ASSERT_EFI_ERROR(status);
+        if (!EFI_ERROR(status)) {
+            mInternalEventServicesAvailable = TRUE;
+        }
+        //ASSERT_EFI_ERROR(status);
     }
 
     NetvscResetStatistics(AdapterInfo);
@@ -516,7 +519,11 @@ Return Value:
     // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
     // which enforces a TPL check for TPL_APPLICATION.
     //
-    status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->InitRndisEvt, &eventIndex);
+    if (mInternalEventServicesAvailable) {
+        status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->InitRndisEvt, &eventIndex);
+    } else {
+        status = gBS->WaitForEvent(1, &AdapterInfo->InitRndisEvt, &eventIndex);
+    }
     if (EFI_ERROR(status))
     {
         goto Cleanup;
@@ -592,7 +599,11 @@ Return Value:
     // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
     // which enforces a TPL check for TPL_APPLICATION.
     //
-    status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->StnAddrEvt, &eventIndex);
+    if (mInternalEventServicesAvailable) {
+        status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->StnAddrEvt, &eventIndex);
+    } else {
+        status = gBS->WaitForEvent(1, &AdapterInfo->StnAddrEvt, &eventIndex);
+    }
     if (EFI_ERROR(status))
     {
         goto Cleanup;
@@ -663,7 +674,11 @@ Return Value:
     // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
     // which enforces a TPL check for TPL_APPLICATION.
     //
-    status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->StnAddrEvt, &eventIndex);
+    if (mInternalEventServicesAvailable) {
+        status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->StnAddrEvt, &eventIndex);
+    } else {
+        status = gBS->WaitForEvent(1, &AdapterInfo->StnAddrEvt, &eventIndex);
+    }
     if (EFI_ERROR(status))
     {
         goto Cleanup;
@@ -836,7 +851,11 @@ Returns:
     // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
     // which enforces a TPL check for TPL_APPLICATION.
     //
-    status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->RxFilterEvt, &eventIndex);
+    if (mInternalEventServicesAvailable) {
+        status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->RxFilterEvt, &eventIndex);
+    } else {
+        status = gBS->WaitForEvent(1, &AdapterInfo->RxFilterEvt, &eventIndex);
+    }
 
     if (EFI_ERROR(status))
     {

@@ -534,10 +534,17 @@ VmbusRootWaitForMessage(
                 &gInternalEventServicesProtocolGuid,
                 NULL,
                 (VOID **)&mInternalEventServices);
-            ASSERT_EFI_ERROR(status);
+            //ASSERT_EFI_ERROR(status);
+            if (!EFI_ERROR(status)) {
+                mInternalEventServicesAvailable = TRUE;
+            }
         }
 
-        status = mInternalEventServices->WaitForEventInternal(1, &RootContext->WaitForMessage, &index);
+        if (mInternalEventServicesAvailable) {
+            status = mInternalEventServices->WaitForEventInternal(1, &RootContext->WaitForMessage, &index);
+        } else {
+            status = gBS->WaitForEvent(1, &RootContext->WaitForMessage, &index);
+        }
         ASSERT_EFI_ERROR(status);
     }
 
@@ -590,14 +597,21 @@ VmbusRootWaitForChannelResponse(
                     &gInternalEventServicesProtocolGuid,
                     NULL,
                     (VOID **)&mInternalEventServices);
-        ASSERT_EFI_ERROR(status);
+        //ASSERT_EFI_ERROR(status);
+        if (!EFI_ERROR(status)) {
+            mInternalEventServicesAvailable = TRUE;
+        }
     }
 
     //
     // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
     // which enforces a TPL check for TPL_APPLICATION.
     //
-    status = mInternalEventServices->WaitForEventInternal(1, &ChannelContext->Response.Event, &index);
+    if (mInternalEventServicesAvailable) {
+        status = mInternalEventServices->WaitForEventInternal(1, &ChannelContext->Response.Event, &index);
+    } else {
+        status = gBS->WaitForEvent(1, &ChannelContext->Response.Event, &index);
+    }
 
     ASSERT_EFI_ERROR(status);
 
@@ -647,17 +661,27 @@ VmbusRootWaitForGpadlResponse(
                     &gInternalEventServicesProtocolGuid,
                     NULL,
                     (VOID **)&mInternalEventServices);
-        ASSERT_EFI_ERROR(status);
+        //ASSERT_EFI_ERROR(status);
+        if (!EFI_ERROR(status)) {
+            mInternalEventServicesAvailable = TRUE;
+        }
     }
 
     //
     // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
     // which enforces a TPL check for TPL_APPLICATION.
     //
-    status = mInternalEventServices->WaitForEventInternal(
-                                        1,
-                                        &RootContext->GpadlTable[GpadlHandle].Event,
-                                        &index);
+    if (mInternalEventServicesAvailable) {
+        status = mInternalEventServices->WaitForEventInternal(
+                                            1,
+                                            &RootContext->GpadlTable[GpadlHandle].Event,
+                                            &index);
+    } else {
+        status = gBS->WaitForEvent(
+                                            1,
+                                            &RootContext->GpadlTable[GpadlHandle].Event,
+                                            &index);
+    }
 
     ASSERT_EFI_ERROR(status);
 

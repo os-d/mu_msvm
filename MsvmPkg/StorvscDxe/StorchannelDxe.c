@@ -422,7 +422,9 @@ Return Value:
 
     case EFI_EXT_SCSI_DATA_DIRECTION_BIDIRECTIONAL:
         // Bidirectional data transfer is not supported.
+        DEBUG ((EFI_D_ERROR, "Bidirectional data transfer is not supported"));
     default:
+        DEBUG ((EFI_D_ERROR, "Invalid data direction: %d", request->ScsiRequest->DataDirection));
         FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
 
     }
@@ -624,7 +626,10 @@ Return Value:
                         &gInternalEventServicesProtocolGuid,
                         NULL,
                         (VOID **)&mInternalEventServices);
-        ASSERT_EFI_ERROR(status);
+        if (!EFI_ERROR(status)) {
+            mInternalEventServicesAvailable = TRUE;
+        }
+        //ASSERT_EFI_ERROR(status);
     }
 
     status = gBS->CreateEvent(
@@ -655,7 +660,12 @@ Return Value:
     // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
     // which enforces a TPL check for TPL_APPLICATION.
     //
-    status = mInternalEventServices->WaitForEventInternal(1, &event, &signaledEventIndex);
+    if (mInternalEventServicesAvailable) {
+        status = mInternalEventServices->WaitForEventInternal(1, &event, &signaledEventIndex);
+    } else {
+        status = gBS->WaitForEvent(1, &event, &signaledEventIndex);
+        ASSERT_EFI_ERROR(status);
+    }
 
     if (EFI_ERROR(status))
     {
