@@ -524,8 +524,6 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerInBootOrder|FALSE
 
 [PcdsFeatureFlag.common]
-  gEfiMdeModulePkgTokenSpaceGuid.PcdInternalEventServicesEnabled|TRUE
-
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerFixedInRAM|FALSE
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedFileLoggerForceEnable|TRUE
 

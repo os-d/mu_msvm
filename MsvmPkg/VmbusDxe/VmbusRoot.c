@@ -17,9 +17,8 @@
 #include <Library/UefiDriverEntryPoint.h>
 #include <Library/UefiLib.h>
 #include <PiDxe.h>
-#include <Protocol/InternalEventServices.h>
 #include "MsInterlocked.h"
-#include "MsInternalEventServices.h"
+#include "MsEventSleep.h"
 #include "MsBit.h"
 #include "VmbusP.h"
 
@@ -515,8 +514,7 @@ VmbusRootWaitForMessage(
     @returns nothing.
 
 **/
-{   UINTN index;
-    HV_MESSAGE *hvMessage;
+{   HV_MESSAGE *hvMessage;
     EFI_STATUS status;
 
     //
@@ -528,23 +526,12 @@ VmbusRootWaitForMessage(
 
     if (!PollForMessage)
     {
-        if (mInternalEventServices == NULL)
-        {
-            status = gBS->LocateProtocol(
-                &gInternalEventServicesProtocolGuid,
-                NULL,
-                (VOID **)&mInternalEventServices);
-            //ASSERT_EFI_ERROR(status);
-            if (!EFI_ERROR(status)) {
-                mInternalEventServicesAvailable = TRUE;
-            }
-        }
-
-        if (mInternalEventServicesAvailable) {
-            status = mInternalEventServices->WaitForEventInternal(1, &RootContext->WaitForMessage, &index);
-        } else {
-            status = gBS->WaitForEvent(1, &RootContext->WaitForMessage, &index);
-        }
+        //
+        // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+        // allowed. Sleep until the completion event is signaled by the SINT
+        // interrupt handler instead.
+        //
+        status = MsWaitForEventSleep(RootContext->WaitForMessage);
         ASSERT_EFI_ERROR(status);
     }
 
@@ -583,7 +570,6 @@ VmbusRootWaitForChannelResponse(
 **/
 {
     EFI_STATUS status;
-    UINTN index;
 
     //
     // TPL must be less than TPL_NOTIFY, since hot add/remove messages are
@@ -591,27 +577,12 @@ VmbusRootWaitForChannelResponse(
     //
     ASSERT(EfiGetCurrentTpl() < TPL_NOTIFY);
 
-    if (mInternalEventServices == NULL)
-    {
-        status = gBS->LocateProtocol(
-                    &gInternalEventServicesProtocolGuid,
-                    NULL,
-                    (VOID **)&mInternalEventServices);
-        //ASSERT_EFI_ERROR(status);
-        if (!EFI_ERROR(status)) {
-            mInternalEventServicesAvailable = TRUE;
-        }
-    }
-
     //
-    // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
-    // which enforces a TPL check for TPL_APPLICATION.
+    // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+    // allowed. Sleep until the completion event is signaled by the SINT
+    // interrupt handler instead.
     //
-    if (mInternalEventServicesAvailable) {
-        status = mInternalEventServices->WaitForEventInternal(1, &ChannelContext->Response.Event, &index);
-    } else {
-        status = gBS->WaitForEvent(1, &ChannelContext->Response.Event, &index);
-    }
+    status = MsWaitForEventSleep(ChannelContext->Response.Event);
 
     ASSERT_EFI_ERROR(status);
 
@@ -640,7 +611,6 @@ VmbusRootWaitForGpadlResponse(
 **/
 {
     EFI_STATUS status;
-    UINTN index;
 
     //
     // TPL must be less than TPL_NOTIFY, since hot add/remove messages are
@@ -655,33 +625,12 @@ VmbusRootWaitForGpadlResponse(
         return status;
     }
 
-   if (mInternalEventServices == NULL)
-   {
-        status = gBS->LocateProtocol(
-                    &gInternalEventServicesProtocolGuid,
-                    NULL,
-                    (VOID **)&mInternalEventServices);
-        //ASSERT_EFI_ERROR(status);
-        if (!EFI_ERROR(status)) {
-            mInternalEventServicesAvailable = TRUE;
-        }
-    }
-
     //
-    // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
-    // which enforces a TPL check for TPL_APPLICATION.
+    // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+    // allowed. Sleep until the completion event is signaled by the SINT
+    // interrupt handler instead.
     //
-    if (mInternalEventServicesAvailable) {
-        status = mInternalEventServices->WaitForEventInternal(
-                                            1,
-                                            &RootContext->GpadlTable[GpadlHandle].Event,
-                                            &index);
-    } else {
-        status = gBS->WaitForEvent(
-                                            1,
-                                            &RootContext->GpadlTable[GpadlHandle].Event,
-                                            &index);
-    }
+    status = MsWaitForEventSleep(RootContext->GpadlTable[GpadlHandle].Event);
 
     ASSERT_EFI_ERROR(status);
 

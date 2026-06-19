@@ -53,7 +53,6 @@
     gEfiVmbusProtocolGuid               ## PRODUCES
     gEfiVmbusLegacyProtocolGuid         ## PRODUCES
     gEfiVmbusLegacyProtocolIvmGuid      ## PRODUCES
-    gInternalEventServicesProtocolGuid  ## CONSUMES
 
 [Pcd]
     gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled                                  ## CONSUMES

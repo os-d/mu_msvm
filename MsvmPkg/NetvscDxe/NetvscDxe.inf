@@ -86,7 +86,6 @@
   gEfiAdapterInformationProtocolGuid            # PRODUCES MS_HYP_CHANGE
   gEfiEmclProtocolGuid                          # CONSUMES MS_HYP_CHANGE
   gEfiVmbusProtocolGuid                         # CONSUMES MS_HYP_CHANGE
-  gInternalEventServicesProtocolGuid            # CONSUMES MS_HYP_CHANGE
 
 [Pcd]
   gEfiNetworkPkgTokenSpaceGuid.PcdSnpCreateExitBootServicesEvent   ## CONSUMES

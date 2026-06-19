@@ -6,10 +6,9 @@
 #include <IsolationTypes.h>
 #include <Protocol/EfiHv.h>
 #include <Protocol/Emcl.h>
-#include <Protocol/InternalEventServices.h>
 #include <Library/DebugLib.h>
 #include <Library/EmclLib.h>
-#include "MsInternalEventServices.h"
+#include <MsEventSleep.h>
 #include "NetvscDxe.h"
 #include "nvspprotocol.h"
 #include "rndis.h"
@@ -75,7 +74,6 @@ Return Value:
     UINT32 rndisMsgSize;
     UINT32 rndisBufferIndex, index;
     NVSP_MESSAGE nvspMessage;
-    UINTN eventIndex;
     ASSERT(AdapterInfo != NULL);
 
     //
@@ -111,21 +109,6 @@ Return Value:
     // must default to TRUE or PXE won't work
     //
     AdapterInfo->MediaPresent = PcdGetBool(PcdMediaPresentEnabledByDefault);
-
-    //
-    // Locate the protocol for waiting for events without the TPL restrictions.
-    //
-    if (mInternalEventServices == NULL)
-    {
-        status = gBS->LocateProtocol(
-                        &gInternalEventServicesProtocolGuid,
-                        NULL,
-                        (VOID **)&mInternalEventServices);
-        if (!EFI_ERROR(status)) {
-            mInternalEventServicesAvailable = TRUE;
-        }
-        //ASSERT_EFI_ERROR(status);
-    }
 
     NetvscResetStatistics(AdapterInfo);
 
@@ -516,14 +499,11 @@ Return Value:
     }
 
     //
-    // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
-    // which enforces a TPL check for TPL_APPLICATION.
+    // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+    // allowed. Sleep until the completion event is signaled by the SINT
+    // interrupt handler instead.
     //
-    if (mInternalEventServicesAvailable) {
-        status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->InitRndisEvt, &eventIndex);
-    } else {
-        status = gBS->WaitForEvent(1, &AdapterInfo->InitRndisEvt, &eventIndex);
-    }
+    status = MsWaitForEventSleep(AdapterInfo->InitRndisEvt);
     if (EFI_ERROR(status))
     {
         goto Cleanup;
@@ -596,14 +576,11 @@ Return Value:
     }
 
     //
-    // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
-    // which enforces a TPL check for TPL_APPLICATION.
+    // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+    // allowed. Sleep until the completion event is signaled by the SINT
+    // interrupt handler instead.
     //
-    if (mInternalEventServicesAvailable) {
-        status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->StnAddrEvt, &eventIndex);
-    } else {
-        status = gBS->WaitForEvent(1, &AdapterInfo->StnAddrEvt, &eventIndex);
-    }
+    status = MsWaitForEventSleep(AdapterInfo->StnAddrEvt);
     if (EFI_ERROR(status))
     {
         goto Cleanup;
@@ -671,14 +648,11 @@ Return Value:
     }
 
     //
-    // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
-    // which enforces a TPL check for TPL_APPLICATION.
+    // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+    // allowed. Sleep until the completion event is signaled by the SINT
+    // interrupt handler instead.
     //
-    if (mInternalEventServicesAvailable) {
-        status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->StnAddrEvt, &eventIndex);
-    } else {
-        status = gBS->WaitForEvent(1, &AdapterInfo->StnAddrEvt, &eventIndex);
-    }
+    status = MsWaitForEventSleep(AdapterInfo->StnAddrEvt);
     if (EFI_ERROR(status))
     {
         goto Cleanup;
@@ -748,7 +722,6 @@ Returns:
     PRNDIS_SET_REQUEST pSetRequest;
     UINT32 rndisBufferIndex = 0;
     EFI_STATUS status;
-    UINTN eventIndex;
 
     oldFilter = AdapterInfo->RxFilter;
 
@@ -848,14 +821,11 @@ Returns:
     }
 
     //
-    // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
-    // which enforces a TPL check for TPL_APPLICATION.
+    // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+    // allowed. Sleep until the completion event is signaled by the SINT
+    // interrupt handler instead.
     //
-    if (mInternalEventServicesAvailable) {
-        status = mInternalEventServices->WaitForEventInternal(1, &AdapterInfo->RxFilterEvt, &eventIndex);
-    } else {
-        status = gBS->WaitForEvent(1, &AdapterInfo->RxFilterEvt, &eventIndex);
-    }
+    status = MsWaitForEventSleep(AdapterInfo->RxFilterEvt);
 
     if (EFI_ERROR(status))
     {
